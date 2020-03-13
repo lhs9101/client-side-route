@@ -1,6 +1,9 @@
 ESLS.ROUTER = function() {
     var routes = [];
-
+    var self = this;
+    window.onpopstate = function() {
+        self.changeRoute(location.pathname);
+    };
 
     function getRouteInfo(url) {
         var params = {};
@@ -10,15 +13,15 @@ ESLS.ROUTER = function() {
             if (urlArr.length !== route.length) return false;
             return urlArr.every((el, j) => {
                 if (j > route.identifier.length - 1) { // 여기서부터 params
-                    params[route.paramNames[j-route.identifier.length]] = el;
+                    params[route.paramNames[j - route.identifier.length]] = el;
                     return true;
                 }
                 var isSame = el === route.identifier[j];
-                if(isSame && j === route.identifier.length -1) functions = route.functions;
+                if (isSame && j === route.identifier.length - 1) functions = route.functions;
                 return isSame;
             });
         });
-        return {functions,params};
+        return { functions, params };
     }
 
 
@@ -31,16 +34,22 @@ ESLS.ROUTER = function() {
         var length = identifier.length + paramNames.length;
         routes.push({ identifier, paramNames, functions, length });
     };
-    this.navigate = function(url,data,title) {
+    this.changeRoute = function(url) {
         var routeInfo = getRouteInfo(url);
         var params = routeInfo.params;
-        routeInfo.functions.every(el=>{
+        var isEnd = false;
+        routeInfo.functions.every((el, i) => {
             var isNext = false;
-            el(params,function(){
+            el(params, function() {
                 isNext = true;
             });
+            if (i === routeInfo.functions.length - 1) isEnd = true;
             return isNext;
         });
-        history.pushState(data,title,url);
+        return isEnd;
+    };
+    this.navigate = function(url, data, title) {
+        var isEnd = self.changeRoute(url);
+        if (isEnd) history.pushState(data, title, url);
     };
 };
